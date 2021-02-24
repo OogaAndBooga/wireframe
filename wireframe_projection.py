@@ -24,7 +24,7 @@ def tan(x):
     return math.tan(math.radians(x))
 
 def do_math(left_right_angle, up_down_angle, coords):
-    new_coords = Coords(coords.x, coords.y, coords.z)
+    new_coords = Coords(coords.x, coords.y, coords.z) #new_coords are used in caculations instead, thats why they are assigned a value
     
     if left_right_angle == 0:
         new_coords = Coords(coords.x, coords.y, coords.z)
@@ -38,16 +38,16 @@ def do_math(left_right_angle, up_down_angle, coords):
         new_coords.y = coords.x / cos(90 - left_right_angle) - cos(left_right_angle) * (coords.x / tan(left_right_angle) - coords.y)
         new_coords.x = (coords.x / cos(90 - left_right_angle) - new_coords.y) * tan(left_right_angle)
     
-    #for 3d, previous operations are enough for 2d
+    #previous operations are enough for 2d, comment out the rest and change convert_to_display() for 2d
     if up_down_angle == 0:
-        pass
+       new_coords = Coords(new_coords.x, new_coords.z, -new_coords.y)
     elif up_down_angle == 90:
-        pass# its all fine
+       pass # its all fine, nothing needs to change
     elif up_down_angle == 180:
-        pass
+       new_coords = Coords(new_coords.x, -new_coords.z, new_coords.y)
     else:
-        new_coords.y = coords.z / cos(up_down_angle) - cos(90 - up_down_angle) * (tan(up_down_angle) * coords.z - new_coords.y)
-        new_coords.z = (coords.z / cos(up_down_angle) - new_coords.y) * tan(90 - up_down_angle)
+       new_coords.y = coords.z / cos(up_down_angle) - cos(90 - up_down_angle) * (tan(up_down_angle) * coords.z - new_coords.y)
+       new_coords.z = (coords.z / cos(up_down_angle) - new_coords.y) * tan(90 - up_down_angle)
 
     return new_coords
 
@@ -102,12 +102,13 @@ axis = [
         Line(Coords(0, 0, 0), Coords(0, 0, 20))
         ]
 
-up_down_angle = 0
-left_right_angle = 0
+up_down_angle = 90
+left_right_angle = 10
 last_up_down_angle = up_down_angle
 last_left_right_angle = left_right_angle
 
 rate_of_turn = 2
+a = 0
 while True:
     pressed = pygame.key.get_pressed()
     if pressed[pygame.K_RIGHT]:
@@ -138,7 +139,7 @@ while True:
         draw_line(screen, 'blue', axis[2], left_right_angle, up_down_angle, -150, 150)
 
         pygame.display.flip()
-        time.sleep(.05)
+        time.sleep(.1)
         last_left_right_angle = left_right_angle
         last_up_down_angle = up_down_angle
 
