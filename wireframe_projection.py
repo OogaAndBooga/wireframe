@@ -37,14 +37,14 @@ def do_math(left_right_angle, up_down_angle, coords):
     a = (coords.x / cos(90 - left_right_angle) - b) * tan(left_right_angle)
     #for 3d, previous operations are enough for 2d
     b = coords.z / cos(up_down_angle) - cos(90 - up_down_angle) * (tan(up_down_angle) * coords.z - b)
-    c = (coords.z / cos(up_down_angle) - b) / tan(90 - up_down_angle)
+    c = (coords.z / cos(up_down_angle) - b) * tan(90 - up_down_angle)
     return Coords(a, b, c)
 
-def convert_to_display(coords):
-    return (coords.x + 200, 200 - coords.z)
+def convert_to_display(coords, xshift, yshift):
+    return (coords.x + 200 + xshift, 200 - coords.z + yshift)
 
-def draw_line(screen, color, line, left_right_angle, up_down_angle):
-    pygame.draw.line(screen, color, convert_to_display(do_math(left_right_angle, up_down_angle, line.coords1)), convert_to_display(do_math(left_right_angle, up_down_angle, line.coords2)))
+def draw_line(screen, color, line, left_right_angle, up_down_angle, xshift = 0, yshift = 0):
+    pygame.draw.line(screen, color, convert_to_display(do_math(left_right_angle, up_down_angle, line.coords1), xshift, yshift), convert_to_display(do_math(left_right_angle, up_down_angle, line.coords2), xshift, yshift))
 
 screen = pygame.display.set_mode((400, 400))
 screen.fill('white')
@@ -85,21 +85,28 @@ cube = [
         Line(Coords(100, 100, 100), Coords(100, 0, 100)),
         Line(Coords(100, 0, 100), Coords(0, 0, 100)),
         ]
+axis = [
+        Line(Coords(0, 0, 0), Coords(20, 0, 0)),
+        Line(Coords(0, 0, 0), Coords(0, 20, 0)),
+        Line(Coords(0, 0, 0), Coords(0, 0, 20))
+        ]
 
 up_down_angle = 0
 left_right_angle = 0
 last_up_down_angle = up_down_angle
 last_left_right_angle = left_right_angle
+
+rate_of_turn = 2
 while True:
     pressed = pygame.key.get_pressed()
     if pressed[pygame.K_RIGHT]:
-        left_right_angle += 1
+        left_right_angle += rate_of_turn
     elif pressed[pygame.K_LEFT]:
-        left_right_angle -= 1
+        left_right_angle -= rate_of_turn
     elif pressed[pygame.K_UP]:
-        up_down_angle -= 1
+        up_down_angle -= rate_of_turn
     elif pressed[pygame.K_DOWN]:
-        up_down_angle += 1
+        up_down_angle += rate_of_turn
     
     if left_right_angle <= -1:
         left_right_angle += 359
@@ -115,6 +122,9 @@ while True:
         print('left_right_angle : {}, up_down_angle : {}'.format(left_right_angle, up_down_angle))
         for line in cube:
             draw_line(screen, 'black', line, left_right_angle, up_down_angle)
+        draw_line(screen, 'red', axis[0], left_right_angle, up_down_angle, -150, 150)
+        draw_line(screen, 'green', axis[1], left_right_angle, up_down_angle, -150, 150)
+        draw_line(screen, 'blue', axis[2], left_right_angle, up_down_angle, -150, 150)
 
         pygame.display.flip()
         time.sleep(.07)
