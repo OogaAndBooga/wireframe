@@ -24,21 +24,32 @@ def tan(x):
     return math.tan(math.radians(x))
 
 def do_math(left_right_angle, up_down_angle, coords):
+    new_coords = Coords(coords.x, coords.y, coords.z)
+    
     if left_right_angle == 0:
-        return Coords(coords.x, coords.y, coords.z)
-    if left_right_angle == 90:
-        return Coords(-coords.y, coords.x, coords.z)
-    if left_right_angle == 180:
-        return Coords(-coords.x, -coords.y, coords.z)
-    if left_right_angle == 270:
-        return Coords(coords.y, -coords.x, coords.z)
-
-    b = coords.x / cos(90 - left_right_angle) - cos(left_right_angle) * (coords.x / tan(left_right_angle) - coords.y)
-    a = (coords.x / cos(90 - left_right_angle) - b) * tan(left_right_angle)
+        new_coords = Coords(coords.x, coords.y, coords.z)
+    elif left_right_angle == 90:
+        new_coords = Coords(-coords.y, coords.x, coords.z)
+    elif left_right_angle == 180:
+        new_coords = Coords(-coords.x, -coords.y, coords.z)
+    elif left_right_angle == 270:
+        new_coords = Coords(coords.y, -coords.x, coords.z)
+    else:
+        new_coords.y = coords.x / cos(90 - left_right_angle) - cos(left_right_angle) * (coords.x / tan(left_right_angle) - coords.y)
+        new_coords.x = (coords.x / cos(90 - left_right_angle) - new_coords.y) * tan(left_right_angle)
+    
     #for 3d, previous operations are enough for 2d
-    b = coords.z / cos(up_down_angle) - cos(90 - up_down_angle) * (tan(up_down_angle) * coords.z - b)
-    c = (coords.z / cos(up_down_angle) - b) * tan(90 - up_down_angle)
-    return Coords(a, b, c)
+    if up_down_angle == 0:
+        pass
+    elif up_down_angle == 90:
+        pass# its all fine
+    elif up_down_angle == 180:
+        pass
+    else:
+        new_coords.y = coords.z / cos(up_down_angle) - cos(90 - up_down_angle) * (tan(up_down_angle) * coords.z - new_coords.y)
+        new_coords.z = (coords.z / cos(up_down_angle) - new_coords.y) * tan(90 - up_down_angle)
+
+    return new_coords
 
 def convert_to_display(coords, xshift, yshift):
     return (coords.x + 200 + xshift, 200 - coords.z + yshift)
@@ -109,7 +120,7 @@ while True:
         up_down_angle += rate_of_turn
     
     if left_right_angle <= -1:
-        left_right_angle += 359
+        left_right_angle += 360
     elif left_right_angle >= 360:
         left_right_angle -= 360
     elif up_down_angle < 0:
@@ -127,7 +138,7 @@ while True:
         draw_line(screen, 'blue', axis[2], left_right_angle, up_down_angle, -150, 150)
 
         pygame.display.flip()
-        time.sleep(.07)
+        time.sleep(.05)
         last_left_right_angle = left_right_angle
         last_up_down_angle = up_down_angle
 
