@@ -96,6 +96,19 @@ cube = [
         Line(Coords(100, 100, 100), Coords(100, 0, 100)),
         Line(Coords(100, 0, 100), Coords(0, 0, 100)),
         ]
+
+pyramidh = 200
+pyramid = [
+        Line(Coords(100, 100, 0), Coords(100, -100, 0)),
+        Line(Coords(100, -100, 0), Coords(-100, -100, 0)),
+        Line(Coords(-100, -100, 0), Coords(-100, 100, 0)),
+        Line(Coords(-100, 100, 0), Coords(100, 100 ,0)),
+        Line(Coords(100, 100, 0), Coords(0, 0, pyramidh)),
+        Line(Coords(100, -100, 0), Coords(0, 0, pyramidh)),
+        Line(Coords(-100, -100, 0), Coords(0, 0, pyramidh)),
+        Line(Coords(-100, 100, 0), Coords(0, 0, pyramidh))
+        ]
+
 axis = [
         Line(Coords(0, 0, 0), Coords(20, 0, 0)),
         Line(Coords(0, 0, 0), Coords(0, 20, 0)),
@@ -103,12 +116,14 @@ axis = [
         ]
 
 up_down_angle = 90
-left_right_angle = 10
+left_right_angle = 0
 last_up_down_angle = up_down_angle
 last_left_right_angle = left_right_angle
 
 rate_of_turn = 2
 a = 0
+observer = Coords(0, 100, 0)
+
 while True:
     pressed = pygame.key.get_pressed()
     if pressed[pygame.K_RIGHT]:
@@ -131,9 +146,10 @@ while True:
 
     if left_right_angle != last_left_right_angle or up_down_angle != last_up_down_angle:
         screen.fill('white')
+        new_observer = do_math(left_right_angle, up_down_angle, observer)
         print('left_right_angle : {}, up_down_angle : {}'.format(left_right_angle, up_down_angle))
-        for line in cube:
-            draw_line(screen, 'black', line, left_right_angle, up_down_angle)
+        for line in pyramid:
+            draw_line(screen, 'black', line, left_right_angle, up_down_angle, observer.x + new_observer.x, 0)
         draw_line(screen, 'red', axis[0], left_right_angle, up_down_angle, -150, 150)
         draw_line(screen, 'green', axis[1], left_right_angle, up_down_angle, -150, 150)
         draw_line(screen, 'blue', axis[2], left_right_angle, up_down_angle, -150, 150)
