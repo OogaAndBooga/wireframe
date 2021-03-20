@@ -1,0 +1,5 @@
+finnish get_intersection function(lines perpendicular to x-axis) 
+Status : Not done
+
+also add to get_semiplane()
+Status : Not done

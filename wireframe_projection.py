@@ -1,7 +1,7 @@
 import pygame, time, math
 pygame.init()
 
-size = (width, height) = (400, 400) #also gets used in convert_to_display function
+size = (width, height) = (400, 400) #also gets used in convert_to_display function, width and height
 screen = pygame.display.set_mode(size)
 screen.fill('white')
 
@@ -26,11 +26,9 @@ class Line():
     slope = None
     yIntersect = None
 
-    def graph(self, x):
+    def graph(self, x): #you shouldnt call it if the line is perpendicular to the x-axis
         if self.slope != None:
             return self.slope * x + self.yIntersect
-        else:
-            return None
 
     def __init__(self, c1, c2):
         self.coords1 = c1
@@ -39,8 +37,8 @@ class Line():
             self.slope = (c2.y - c1.y) / (c2.x - c1.x)
             self.yIntersect = c1.y - c1.x * self.slope
         else:
-            pass #slope is already None
-    
+            self.slope = None #slope is already None, but imma set it again
+
     def __repr__(self):
         return('line1 : {}\nline2 : {}'.format(self.coords1, self.coords2))
 
@@ -101,15 +99,21 @@ def do_math(left_right_angle, up_down_angle, data):
 
 
 def get_intersection(line1, line2):
-    if line1.slope is None:#ill tackle this a lot later
-        if line2.aslope is None:
-            pass #TODO ill do this a lot later, needto think about it
+    if line1.slope is not None and line2.slope is not None:
+        if line1.slope != line2.slope: #if true, linesare  paralel
+            x = (line2.yIntersect - line1.yIntersect) / (line1.slope - line2.slope)
+            y = line1.graph(x)
         else:
-            pass
-
-    else:
-        x = (line2.yIntersect - line1.yIntersect) / (line1.slope - line2.slope)
+            return None
+    elif line1.slope is not None and line2.slope is None:
+        x = line2.coords1.x
         y = line1.graph(x)
+    elif line1.slope is None and line2.slope is not None:
+        x = line1.coords1.x
+        y = line2.graph(x)
+    elif line1.slope is None and line2.slope is None:
+        return None
+        #i have no ideea on  how to do this
 
     #checks if intersection happens on segment
     on_line1_x = line1.coords1.x <= x <= line1.coords2.x or line1.coords1.x >= x >= line1.coords2.x
@@ -120,6 +124,15 @@ def get_intersection(line1, line2):
         return(Coords(x,y))
     else:
         return None
+
+def get_semiplane(coords, line):
+    if line.slope is None:
+        pass #ill do it later
+    else:
+        if coords.y >= line.graph(coords.x):
+            return True
+        else:
+            return False
 
 #return coords relative to the display plane, {relative to the display plane} x, y plane coords z distance from plane
 def convert_to_display(data, xshift = 0, yshift = 0):
@@ -139,7 +152,7 @@ def convert_to_display(data, xshift = 0, yshift = 0):
 
 def draw(screen, color, data):
     if isinstance(data, Line):
-        pygame.draw.line(screen, color, data.coords1.pygame_format, data.coords2.pygame_format)
+        pygame.draw.line(screen, color, data.coords1.pygame_format, data.coords2.pygame_format, 3)
     elif isinstance(data, Polygon):
         draw(screen, color, data.line1)
         draw(screen, color, data.line2)
@@ -194,11 +207,27 @@ while True:
         polygon = test_shape['polygon']
         line = test_shape['line']
 
-        line = convert_to_display(do_math(left_right_angle, up_down_angle, line))
-        polygon = convert_to_display(do_math(left_right_angle, up_down_angle, polygon))
+        lines = []
+        lines.append(convert_to_display(do_math(left_right_angle, up_down_angle, line)))
+        p = convert_to_display(do_math(left_right_angle, up_down_angle, polygon))
 
-        draw(screen, 'green', polygon)
-        draw(screen, 'grey', line)
+        for side in [p.line1, p.line2, p.line3]:
+            alt_lines = list(lines)
+            for line in lines:
+                intersection = get_intersection(side, line)
+                if intersection is not None:
+                    alt_lines.append(Line(line.coords1, intersection))
+                    alt_lines.append(Line(line.coords2, intersection))
+                    del alt_lines[lines.index(line)]
+            lines = alt_lines
+            
+        print(len(lines))
+
+        draw(screen, 'green', p)
+
+        colors = ['red', 'yellow', 'blue']
+        for line in lines:
+            draw(screen, colors[2 - lines.index(line)], line)
 
         #idk
 
