@@ -9,7 +9,7 @@ class Coords():
     x = 0
     y = 0
     z = 0
-    pygame_format = None
+    pygame_format = None #This is for passing the coords to pygame function, it accepts a tuple : (x, y)
 
     def __init__(self, x, y, z = 0):
         self.x = x
@@ -26,19 +26,19 @@ class Line():
     slope = None
     yIntersect = None
 
-    # def graph(self, x):
-    #     if self.slope != None
-    #         return self.slope * x + self.yIntersect
-    #     else:
-    #         return None
+    def graph(self, x):
+        if self.slope != None:
+            return self.slope * x + self.yIntersect
+        else:
+            return None
 
     def __init__(self, c1, c2):
         self.coords1 = c1
         self.coords2 = c2
-        try:
+        if c2.x - c1.x != 0: #condition for line perpendicular to x-axis
             self.slope = (c2.y - c1.y) / (c2.x - c1.x)
             self.yIntersect = c1.y - c1.x * self.slope
-        except(ZeroDivisionError):
+        else:
             pass #slope is already None
     
     def __repr__(self):
@@ -63,7 +63,6 @@ def tan(x):
 def do_math(left_right_angle, up_down_angle, data):
     if isinstance(data, Coords):
         new_data = Coords(data.x, data.y, data.z) #new_data are used in caculations instead, thats why they are assigned a value
-    
         if left_right_angle == 0:
             new_data = Coords(data.x, data.y, data.z)
         elif left_right_angle == 90:
@@ -101,32 +100,26 @@ def do_math(left_right_angle, up_down_angle, data):
         return Polygon(l1, l2, l3)
 
 
-# def do_math_line(left_right_angle, up_down_angle, line):
-#     c1 = do_math_coords(left_right_angle, up_down_angle, line.coords1)
-#     c2 = do_math_coords(left_right_angle, up_down_angle, line.coords2)
-#     return Line(c1, c2)
-
-# def do_math_polygon(left_right_angle, up_down_angle, polygon):
-#     l1 = do_math_line(left_right_angle, up_down_angle, polygon.line1)
-#     l2 = do_math_line(left_right_angle, up_down_angle, polygon.line2)
-#     l3 = do_math_line(left_right_angle, up_down_angle, polygon.line3)
-#     return Polygon(l1, l2, l3)
-
 def get_intersection(line1, line2):
-    if line1.slope is None:
-        pass
-    else:
-        x = (line2.yIntersect - line1.yIntersect) / (line1.sleep - line2.slope)
-        y = line1.graph(x)
-    # a1 = (line1.coords2.y - line1.coords1.y) / (line1.coords2.x - line1.coords1.x)
-    # b1 = line1.coords1.y - line1.coords1.x * a1
+    if line1.slope is None:#ill tackle this a lot later
+        if line2.aslope is None:
+            pass #TODO ill do this a lot later, needto think about it
+        else:
+            pass
 
-    # a2 = (line2.coords2.y - line2.coords1.y) / (line2.coords2.x - line2.coords1.x)
-    # b2 = line2.coords1.y - line2.coords1.x * a2
-    #   this is the intersection
-    print('a1 : {}, b1 : {}'.format(a1, b1))
-    print('a2 : {}, b2 : {}'.format(a2, b2))
-    return(Coords(x,y))
+    else:
+        x = (line2.yIntersect - line1.yIntersect) / (line1.slope - line2.slope)
+        y = line1.graph(x)
+
+    #checks if intersection happens on segment
+    on_line1_x = line1.coords1.x <= x <= line1.coords2.x or line1.coords1.x >= x >= line1.coords2.x
+    on_line1_y = line1.coords1.y <= y <= line1.coords2.y or line1.coords1.y >= y >= line1.coords2.y
+    on_line2_x = line2.coords1.x <= x <= line2.coords2.x or line2.coords1.x >= x >= line2.coords2.x
+    on_line2_y = line2.coords1.y <= y <= line2.coords2.y or line2.coords1.y >= y >= line2.coords2.y
+    if on_line1_x and on_line1_y and on_line2_x and on_line2_y:
+        return(Coords(x,y))
+    else:
+        return None
 
 #return coords relative to the display plane, {relative to the display plane} x, y plane coords z distance from plane
 def convert_to_display(data, xshift = 0, yshift = 0):
