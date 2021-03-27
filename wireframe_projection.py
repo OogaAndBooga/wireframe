@@ -155,12 +155,12 @@ def get_intersection(line1, line2):
         return None
         #i have no ideea on  how to do this(i think this is fine)(if they are parralel they cant intersect)
 
-    #checks if intersection happens on segment
+    #checks if intersection happens on segment(i dont know why removing the y check made  it work(probabley returning an intersection when there was not))
     on_line1_x = line1.coords1.x <= x <= line1.coords2.x or line1.coords1.x >= x >= line1.coords2.x
-    on_line1_y = line1.coords1.y <= y <= line1.coords2.y or line1.coords1.y >= y >= line1.coords2.y
+    #on_line1_y = line1.coords1.y <= y <= line1.coords2.y or line1.coords1.y >= y >= line1.coords2.y
     on_line2_x = line2.coords1.x <= x <= line2.coords2.x or line2.coords1.x >= x >= line2.coords2.x
-    on_line2_y = line2.coords1.y <= y <= line2.coords2.y or line2.coords1.y >= y >= line2.coords2.y
-    if on_line1_x and on_line1_y and on_line2_x and on_line2_y:
+    #on_line2_y = line2.coords1.y <= y <= line2.coords2.y or line2.coords1.y >= y >= line2.coords2.y
+    if on_line1_x and on_line2_x:
         return(Coords(x,y))
     else:
         return None
@@ -189,16 +189,19 @@ def is_inside(coords, triangle):
 
 def obstruct(line, triangle):
     if is_inside(line.coords1, triangle) and is_inside(line.coords2, triangle):
+        print('completed obstructed')
         return [] #the line is obstructed completley
     elif is_inside(line.coords1, triangle):
         for side in [triangle.side1, triangle.side2, triangle.side3]:
             intersection = get_intersection(side, line)
             if intersection:
+                print('partley bostructed')
                 return [Line(line.coords2, intersection)]
     elif is_inside(line.coords2, triangle):
         for side in [triangle.side1, triangle.side2, triangle.side3]:
             intersection = get_intersection(side, line)
             if intersection:
+                print('partley obstructed')
                 return [Line(line.coords1, intersection)]
     else:
         new_lines = []
@@ -212,9 +215,13 @@ def obstruct(line, triangle):
                     new_lines.append(Line(line.coords2, intersection))
         #make sure to retunr the original line if not obstructed
         if new_lines != []:
+            print('middle obstruced')
             return new_lines
         else:
+            print('not obstructed')
             return [line]
+
+    print('ERRRRROR BIG FAT ERROR, IT RETURNS nothing. NOTHING!!!')
 
 
 #return coords relative to the display plane, {relative to the display plane} x, y plane coords z distance from plane
@@ -291,6 +298,7 @@ while True:
         line = convert_to_display(do_math(left_right_angle, up_down_angle, line))
         triangle = convert_to_display(do_math(left_right_angle, up_down_angle, triangle))
 
+        print(obstruct(line, triangle), '\n')
         for l in obstruct(line, triangle):
             draw(l, 'black')
         draw(triangle, 'black')
