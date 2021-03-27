@@ -1,7 +1,10 @@
-import pygame, time, math
-pygame.init()
+import time
+import math
+import pygame
 
-size = (width, height) = (400, 400) #also gets used in convert_to_display function, width and height
+#creating display and variables for draw()
+pygame.init()
+size = (width, height) = (400, 400)
 screen = pygame.display.set_mode(size)
 screen.fill('white')
 
@@ -16,6 +19,12 @@ class Coords():
         self.y = y
         self.z = z
         self.pygame_format = (x, y)
+
+    def __eq__(self, other):
+        if(self.x == other.x and self.y == other.y and self.z == other.z):
+            return True
+        else:
+            return False
 
     def __repr__(self):
         return('x : {}, y : {}, z : {}'.format(round(self.x, 2), round(self.y, 2), round(self.z, 2)))
@@ -40,17 +49,48 @@ class Line():
             self.slope = None #slope is already None, but imma set it again
 
     def __repr__(self):
-        return('line1 : {}\nline2 : {}'.format(self.coords1, self.coords2))
+        return('coords1 : {}\ncoords2 : {}'.format(self.coords1, self.coords2))
 
-class Polygon():
-    line1 = None
-    line2 = None
-    line3 = None
+class Triangle():
+    side1 = None
+    side2 = None
+    side3 = None
+    #line1 and coords1 contain all 3 points, used in obstruct() to define the inside of a triangle(and also usefull for get_semiplane())
+    coords1 = None
+    coords2 = None
+    coords3 = None
     
     def __init__(self, l1, l2, l3):
-        self.line1 = l1
-        self.line2 = l2
-        self.line3 = l3
+        self.side1 = l1
+        self.side2 = l2
+        self.side3 = l3
+
+        #it looks ugly(i dont know how to make the code prettier)
+        if l1.coords1 == l2.coords1 or l1.coords2 == l2.coords1:
+            self.coords1 = l2.coords2
+        else:
+            self.coords1 = l2.coords1
+        if l2.coords1 == l3.coords1 or l2.coords2 == l3.coords1:
+            self.coords2 = l3.coords2
+        else:
+            self.coords2 = l3.coords1
+        if l3.coords1 == l1.coords1 or l3.coords2 == l1.coords1:
+            self.coords3 = l1.coords2
+        else:
+            self.coords3 = l1.coords1
+    
+    def get_opposite_coords(self, side):
+        if side == self.side1:
+            return self.coords1
+        elif side == self.side2:
+            return self.coords2
+        elif side == self.side3:
+            return self.coords3
+
+
+    # def __repr__(self):
+    #     s = self
+    #     return('line1, coords1 : {}, {}\nline2, coords2 : {}, {}\nline3, coords3 : {}, {}'.format(s.line1, s.coords1, s.line2, s.coords2, s.line3, s.coords3))
 
 def cos(x):
     return math.cos(math.radians(x))
@@ -91,16 +131,16 @@ def do_math(left_right_angle, up_down_angle, data):
         c2 = do_math(left_right_angle, up_down_angle, data.coords2)
         return Line(c1, c2)
     
-    elif isinstance(data, Polygon):
-        l1 = do_math(left_right_angle, up_down_angle, data.line1)
-        l2 = do_math(left_right_angle, up_down_angle, data.line2)
-        l3 = do_math(left_right_angle, up_down_angle, data.line3)
-        return Polygon(l1, l2, l3)
+    elif isinstance(data, Triangle):
+        l1 = do_math(left_right_angle, up_down_angle, data.side1)
+        l2 = do_math(left_right_angle, up_down_angle, data.side2)
+        l3 = do_math(left_right_angle, up_down_angle, data.side3)
+        return Triangle(l1, l2, l3)
 
 
 def get_intersection(line1, line2):
     if line1.slope is not None and line2.slope is not None:
-        if line1.slope != line2.slope: #if true, linesare  paralel
+        if line1.slope != line2.slope: #if true, lines are  paralel
             x = (line2.yIntersect - line1.yIntersect) / (line1.slope - line2.slope)
             y = line1.graph(x)
         else:
@@ -113,7 +153,7 @@ def get_intersection(line1, line2):
         y = line2.graph(x)
     elif line1.slope is None and line2.slope is None:
         return None
-        #i have no ideea on  how to do this
+        #i have no ideea on  how to do this(i think this is fine)(if they are parralel they cant intersect)
 
     #checks if intersection happens on segment
     on_line1_x = line1.coords1.x <= x <= line1.coords2.x or line1.coords1.x >= x >= line1.coords2.x
@@ -127,12 +167,55 @@ def get_intersection(line1, line2):
 
 def get_semiplane(coords, line):
     if line.slope is None:
-        pass #ill do it later
+        if coords.x >= line.coords1.x:
+            return True
+        else:
+            return False
     else:
         if coords.y >= line.graph(coords.x):
             return True
         else:
             return False
+
+def is_inside(coords, triangle):
+    #triangle coords1 and line1 contan enough data to draw the triangle
+    inside1 = get_semiplane(coords, triangle.side1) == get_semiplane(triangle.coords1, triangle.side1)
+    inside2 = get_semiplane(coords, triangle.side2) == get_semiplane(triangle.coords2, triangle.side2)
+    inside3 = get_semiplane(coords, triangle.side3) == get_semiplane(triangle.coords3, triangle.side3)
+    if inside1 == inside2 == inside3:
+        return True
+    else:
+        return False
+
+def obstruct(line, triangle):
+    if is_inside(line.coords1, triangle) and is_inside(line.coords2, triangle):
+        return [] #the line is obstructed completley
+    elif is_inside(line.coords1, triangle):
+        for side in [triangle.side1, triangle.side2, triangle.side3]:
+            intersection = get_intersection(side, line)
+            if intersection:
+                return [Line(line.coords2, intersection)]
+    elif is_inside(line.coords2, triangle):
+        for side in [triangle.side1, triangle.side2, triangle.side3]:
+            intersection = get_intersection(side, line)
+            if intersection:
+                return [Line(line.coords1, intersection)]
+    else:
+        new_lines = []
+        for side in [triangle.side1, triangle.side2, triangle.side3]:
+            intersection = get_intersection(side, line)
+            if intersection:
+                #finds the non-obstructed line
+                if get_semiplane(line.coords1, side) != get_semiplane(triangle.get_opposite_coords(side), side):
+                    new_lines.append(Line(line.coords1, intersection))
+                else:
+                    new_lines.append(Line(line.coords2, intersection))
+        #make sure to retunr the original line if not obstructed
+        if new_lines != []:
+            return new_lines
+        else:
+            return [line]
+
 
 #return coords relative to the display plane, {relative to the display plane} x, y plane coords z distance from plane
 def convert_to_display(data, xshift = 0, yshift = 0):
@@ -140,34 +223,32 @@ def convert_to_display(data, xshift = 0, yshift = 0):
         return Coords(data.x + width / 2 + xshift, height / 2 - data.z + yshift, data.y)
     elif isinstance(data, Line):
         return Line(convert_to_display(data.coords1, xshift, yshift), convert_to_display(data.coords2, xshift, yshift))
-    elif isinstance(data, Polygon):
-        line1 = convert_to_display(data.line1, xshift, yshift)
-        line2 = convert_to_display(data.line2, xshift, yshift)
-        line3 = convert_to_display(data.line3, xshift, yshift)
-        return Polygon(line1, line2, line3)
-
+    elif isinstance(data, Triangle):
+        line1 = convert_to_display(data.side1, xshift, yshift)
+        line2 = convert_to_display(data.side2, xshift, yshift)
+        line3 = convert_to_display(data.side3, xshift, yshift)
+        return Triangle(line1, line2, line3)
         
 ### THE DRAW FUNCTIONS JUST DRAW, AND DONT PROCESS/CHANGE ANYTHING
 ### THEY JUST GET COORDS AND DRAW THEM
-
-def draw(screen, color, data):
+def draw(data, color):
     if isinstance(data, Line):
-        pygame.draw.line(screen, color, data.coords1.pygame_format, data.coords2.pygame_format, 3)
-    elif isinstance(data, Polygon):
-        draw(screen, color, data.line1)
-        draw(screen, color, data.line2)
-        draw(screen, color, data.line3)
+        pygame.draw.line(screen, color, data.coords1.pygame_format, data.coords2.pygame_format, 1)
+    elif isinstance(data,Triangle):
+        draw(data.side1, color)
+        draw(data.side2, color)
+        draw(data.side3, color)
 
-#the test(for planes obstructing lines) format fill be a map with planes and lines
-test_shape = {
-'polygon' : Polygon(Line(Coords(-100, 0, 0), Coords(100, 0, 0)), Line(Coords(100, 0, 0), Coords(0, 0, 100)),Line(Coords(0, 0, 100), Coords(-100, 0, 0))),
-'line' : Line(Coords(-200, 100, 50), Coords(200, 100, 50))
-            }
+#the test_shapez(for planes obstructing lines)
+test_shapes = {
+    'triangle' : Triangle(Line(Coords(-100, 0, 0), Coords(100, 0, 0)), Line(Coords(100, 0, 0), Coords(0, 0, 100)),Line(Coords(0, 0, 100), Coords(-100, 0, 0))),
+    'line' : Line(Coords(-200, 100, 50), Coords(200, 100, 50))
+    }
 
 axis = [
-        Line(Coords(0, 0, 0), Coords(40, 0, 0)),
-        Line(Coords(0, 0, 0), Coords(0, 40, 0)),
-        Line(Coords(0, 0, 0), Coords(0, 0, 40))
+        Line(Coords(0, 0, 0), Coords(20, 0, 0)),
+        Line(Coords(0, 0, 0), Coords(0, 20, 0)),
+        Line(Coords(0, 0, 0), Coords(0, 0, 2))
         ]
 
 up_down_angle = 90
@@ -203,37 +284,20 @@ while True:
         screen.fill('white')
         print('left_right_angle : {}, up_down_angle : {}'.format(left_right_angle, up_down_angle))
 
-        ## the draw function just draw, it also needs do pass trough : do_math, convert_to display(returns a tuple for pygame's draw function)
-        polygon = test_shape['polygon']
-        line = test_shape['line']
+        ## the draw function just draws, it also needs do pass trough : do_math, convert_to display(returns a tuple for pygame's draw function)
+        triangle = test_shapes['triangle']
+        line = test_shapes['line']
 
-        lines = []
-        lines.append(convert_to_display(do_math(left_right_angle, up_down_angle, line)))
-        p = convert_to_display(do_math(left_right_angle, up_down_angle, polygon))
+        line = convert_to_display(do_math(left_right_angle, up_down_angle, line))
+        triangle = convert_to_display(do_math(left_right_angle, up_down_angle, triangle))
 
-        for side in [p.line1, p.line2, p.line3]:
-            alt_lines = list(lines)
-            for line in lines:
-                intersection = get_intersection(side, line)
-                if intersection is not None:
-                    alt_lines.append(Line(line.coords1, intersection))
-                    alt_lines.append(Line(line.coords2, intersection))
-                    del alt_lines[lines.index(line)]
-            lines = alt_lines
-            
-        print(len(lines))
+        for l in obstruct(line, triangle):
+            draw(l, 'black')
+        draw(triangle, 'black')
 
-        draw(screen, 'green', p)
-
-        colors = ['red', 'yellow', 'blue']
-        for line in lines:
-            draw(screen, colors[2 - lines.index(line)], line)
-
-        #idk
-
-        draw(screen, 'red', convert_to_display(do_math(left_right_angle, up_down_angle, axis[0]), -150, 150))
-        draw(screen, 'green', convert_to_display(do_math(left_right_angle, up_down_angle, axis[1]), -150, 150))
-        draw(screen, 'blue', convert_to_display(do_math(left_right_angle, up_down_angle, axis[2]), -150, 150))
+        draw(convert_to_display(do_math(left_right_angle, up_down_angle, axis[0]), -150, 150), 'red')
+        draw(convert_to_display(do_math(left_right_angle, up_down_angle, axis[1]), -150, 150), 'green')
+        draw(convert_to_display(do_math(left_right_angle, up_down_angle, axis[2]), -150, 150), 'blue')
 
         pygame.display.flip()
         time.sleep(.1)
