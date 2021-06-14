@@ -1,4 +1,3 @@
 # wireframe
-u gib it points and it moves them to seem as if thy points rotate
-(in more detail)
 
+A program that i am currently working on. The program is given a wireframe(just the edges(muchii) of a shape)(it cand also be told if faces are fillid in, meaning they will block line of sight to other elements) and can display it from several angles.
