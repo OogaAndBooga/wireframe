@@ -28,16 +28,21 @@ class Coords():
     def __repr__(self):
         return('x : {}, y : {}, z : {}'.format(round(self.x, 2), round(self.y, 2), round(self.z, 2)))
 
+    def get_instance(self):
+        return Coords(self.x, self.y)
+
 class Line():
     coords1 = None
     coords2 = None
     slope = None
     yIntersect = None
+    color = None
 
     xzline = None
     yzline = None
 
-    def __init__(self, c1, c2, threeDimensions = True): #threeDimensions is used to avoid recursion
+    def __init__(self, c1, c2, threeDimensions = True, color = 'black'): #threeDimensions is used to avoid recursion
+        self.color = color
         self.coords1 = c1
         self.coords2 = c2
         if c2.x != c1.x: #condition for line perpendicular to x-axis
@@ -49,6 +54,13 @@ class Line():
         if threeDimensions:
             self.xzline = Line(Coords(self.coords1.x, self.coords1.z), Coords(self.coords2.x, self.coords2.z), False)
             self.yzline = Line(Coords(self.coords1.y, self.coords1.z), Coords(self.coords2.y, self.coords2.z), False)
+    def ___eq__(self, other):
+        if self.coords1 == other.coords1 and self.coords2 == other.coords2:
+            return True
+        elif self.coords1 == other.coords2 and self.coords2 == other.coords1:
+            return True
+        else:
+            return False
     def __repr__(self):
         return('coords1 : {}\ncoords2 : {}'.format(self.coords1, self.coords2))
 
@@ -56,6 +68,9 @@ class Line():
         return (a + b) / 2
     def get_center(self):
         return Coords(self.avg(self.coords1.x, self.coords2.x), self.avg(self.coords1.y, self.coords2.y), self.avg(self.coords1.z, self.coords2.z))
+
+    def get_instance(self):
+        return Line(self.coords1.get_instance(), self.coords2.get_instance())
 
     def get_xzline(self):
         return Line(Coords(self.coords1.x, self.coords1.z), Coords(self.coords2.x, self.coords2.z))
@@ -68,8 +83,12 @@ class Line():
         return (y - self.yIntersect) / self.slope
     def threeDimensionalGraph(self, x):
         return Coords(x, self.graph(x), self.xzline.graph(x))
+    def xygraph(self, x, y):
+        return (self.xzline.slope * x + self.yzline.slope * y + self.xzline.yIntersect + self.yzline.yIntersect) / 2
 
 class Triangle():
+    drawEdge = None
+    color = None
     side1 = None
     side2 = None
     side3 = None
@@ -83,7 +102,9 @@ class Triangle():
     xzline = None #also for graph funciton
     isPerpendicularToxyplane = False
 
-    def __init__(self, l1, l2, l3):
+    def __init__(self, l1, l2, l3, drawEdge = False, color = 'black'):
+        self.drawEdge = drawEdge
+        self.color = color
         if isinstance(l1, Line):
             self.side1 = l1
             self.side2 = l2
@@ -191,22 +212,24 @@ class Triangle():
         else:
             return self.yzline.graph(coords.y) - self.xzline.graph(0) + self.xzline.graph(coords.x)
 
-    def get_intersection(self, line):
-        if self.isPerpendicularToxyplane:
-            return None
-        else:
-            if line.coords1 == line.coords2: # the line doesnt change at all
-                return None
-            elif line.coords1.x == line.coords2.x:
-                intersection = get_graph_intersection(self.yzline, line.yzline)
-                if intersection is None:
-                    return None
-                return Coords(line.coords1.x, intersection.x, intersection.y)
-            else:
-                intersection = get_graph_intersection(self.xzline, line.xzline)
-                if intersection is None:
-                    return None
-                return Coords(intersection.x, line.graph(intersection.x), intersection.z)
+    # def get_intersection(self, line):
+    #     if self.isPerpendicularToxyplane:
+    #         return None
+    #     else:
+    #         if line.coords1 == line.coords2: # the line doesnt change at all
+    #             return None
+    #         elif line.coords1.x == line.coords2.x:
+    #             intersection = get_graph_intersection(self.yzline, line.yzline)
+    #             if intersection is None:
+    #                 return None
+    #             return Coords(line.coords1.x, intersection.x, intersection.y)
+    #         else:
+    #             print('ha?')
+    #             plane = self
+    #             a = (-2 * plane.yzline.yIntersect + line.yzline.yIntersect + line.xzline.yIntersect - line.yIntersect)
+    #             b = (2 * line.slope * plane.yzline.slope - line.slope * line.yzline.slope - line.xzline.slope + 2 * plane.xzline.slope)
+    #             x = a / b
+    #             return Coords(x, line.graph(x), line.xzline.graph(x))
 
 def cos(x):
     return math.cos(math.radians(x))
@@ -248,13 +271,7 @@ def do_math(left_right_angle, up_down_angle, data):
         l1 = do_math(left_right_angle, up_down_angle, data.side1)
         l2 = do_math(left_right_angle, up_down_angle, data.side2)
         l3 = do_math(left_right_angle, up_down_angle, data.side3)
-        return Triangle(l1, l2, l3)
-
-def get_intersection(line1, line2):
-        l1 = do_math(left_right_angle, up_down_angle, data.side1)
-        l2 = do_math(left_right_angle, up_down_angle, data.side2)
-        l3 = do_math(left_right_angle, up_down_angle, data.side3)
-        return Triangle(l1, l2, l3)
+        return Triangle(l1, l2, l3, data.drawEdge, data.color)
 
 def get_intersection(line1, line2):
     intersection = get_graph_intersection(line1, line2)
@@ -328,7 +345,7 @@ def get_semiplane(coords, line):
 
 def plane_is_obstructing(coords, plane): #add special cases
     if plane.graph(coords) is not None:
-        if coords.z <= plane.graph(coords):
+        if coords.z > plane.graph(coords):
             return False
         else:
             return True
@@ -346,28 +363,19 @@ def is_inside(coords, triangle):
         return False
 
 def obstruct(line, triangle, check_intersect_line_with_plane = True): #add special cases
+    if line == triangle.side1 or line == triangle.side2 or line == triangle.side3:
+        return [line]
     if check_intersect_line_with_plane:
-        intersection = triangle.get_intersection(line)
-        if intersection is None:
-            if plane_is_obstructing(line.coords1, triangle):
-                return obstruct(line, triangle, False)
-            else:
-                return [line]
-        else:
-            oCoords1 = plane_is_obstructing(line.coords1, triangle)
-            oCoords2 = plane_is_obstructing(line.coords2, triangle)
-            if oCoords1 and oCoords2:
-                print('plane in front')
-                return obstruct(line, triangle, False)
-            elif oCoords1 == False and oCoords2 == False:
-                print('line in front')
-                return [line]
-            elif oCoords1:
-                print('stabbin ,coords2 in front')
-                return [Line(line.coords2, intersection)] + obstruct(Line(line.coords1, intersection), triangle, False)
-            else:
-                print('stabbin ,coords1 in front')
-                return [Line(line.coords1, intersection)] + obstruct(Line(line.coords2, intersection), triangle, False)
+        oCoords1 = plane_is_obstructing(line.coords1, triangle)
+        oCoords2 = plane_is_obstructing(line.coords2, triangle)
+        if oCoords1 and oCoords2:
+            print('plane in front')
+            return obstruct(line, triangle, False)
+        elif oCoords1 == False and oCoords2 == False:
+            print('line in front')
+            return [line]
+        else: #line intersects plane
+            return [line]
     else:
         if is_inside(line.coords1, triangle) and is_inside(line.coords2, triangle):
             print('completed obstructed')
@@ -407,7 +415,6 @@ def obstruct(line, triangle, check_intersect_line_with_plane = True): #add speci
             else:
                 print('not obstructed')
                 return [line]
-
     print('ERRRRROR BIG FAT ERROR, IT RETURNS nothing. NOTHING!!!')
 
 #return coords relative to the display plane, {relative to the display plane} x, y plane coords z distance from plane
@@ -420,24 +427,43 @@ def convert_to_display(data, xshift = 0, yshift = 0):
         line1 = convert_to_display(data.side1, xshift, yshift)
         line2 = convert_to_display(data.side2, xshift, yshift)
         line3 = convert_to_display(data.side3, xshift, yshift)
-        return Triangle(line1, line2, line3)
+        return Triangle(line1, line2, line3, data.drawEdge, data.color)
 
 ### THE DRAW FUNCTIONS JUST DRAW, AND DONT PROCESS/CHANGE ANYTHING
 ### THEY JUST GET COORDS AND DRAW THEM
 
 def draw(data, color):
     if isinstance(data, Line):
-        pygame.draw.line(screen, color, data.coords1.pygame_format, data.coords2.pygame_format, 1)
-    elif isinstance(data, Triangle):
+        pygame.draw.line(screen, color, data.coords1.pygame_format, data.coords2.pygame_format, 2)
+    elif isinstance(data, Triangle) and data.drawEdge:
         draw(data.side1, color)
         draw(data.side2, color)
         draw(data.side3, color)
 
-#the test_shapez(for planes obstructing lines)
+#the test_shapes(for planes obstructing lines)
 test_shapes = {
-    'triangle' : Triangle(Coords(100, 0, 0), Coords(-100, 0, 0), Coords(0, 0, 100)),
-    'lines' : [Line(Coords(0, 100, 0), Coords(0, -100, 0)), Line(Coords(0, 0, 0), Coords(0, 0, 100))]
+    'triangles' : [Triangle(Coords(100, 0, 0), Coords(-100, 0, 0), Coords(0, 0, 100), True)],
+    'lines' : [Line(Coords(100, 100, 100), Coords(-100, 100, 100))]
     }
+
+h = 120
+boolean = False
+pyramid = {
+    'triangles' : [
+        Triangle(Coords(-100, -100), Coords(100, -100), Coords(0, 120), boolean, 'red'),
+        Triangle(Coords(-100, -100), Coords(0, 120), Coords(0, 0, h), boolean, 'green'),
+        Triangle(Coords(0, 120), Coords(100, -100), Coords(0, 0, h), boolean, 'blue'),
+        Triangle(Coords(100, -100), Coords(-100, -100), Coords(0, 0, h), boolean, 'purple')
+    ],
+    'lines' : [
+        Line(Coords(-100, -100), Coords(100, -100)),
+        Line(Coords(-100, -100), Coords(0, 120)),
+        Line(Coords(-100, -100), Coords(0, 0, h)),
+        Line(Coords(100, -100), Coords(0, 120)),
+        Line(Coords(100, -100), Coords(0, 0, h)),
+        Line(Coords(0, 120), Coords(0, 0, h))
+    ]
+}
 
 axis = [
         Line(Coords(0, 0, 0), Coords(20, 0, 0)),
@@ -449,23 +475,6 @@ up_down_angle = 90
 left_right_angle = 0
 last_up_down_angle = up_down_angle
 last_left_right_angle = left_right_angle
-
-# TODO remove this
-# pygame.quit()
-
-# c1 = Coords(0, 0, 0)
-# c2 = Coords(0, 100, 100)
-# c3 = Coords(100, 50, 100)
-# c4= Coords(100, 0, 0)
-# c5 = Coords(0, 100, 0)
-# c6 = Coords(0, 0, 100)
-# line1 = Line(c1, c2)
-# line2 = Line(c3, c4)
-# line3 = Line(c5, c6)
-# plane1 = Triangle(c1, c2, c3)
-# plane2 = Triangle(c4, c5, c6)
-# pygame.quit()
-# raise KeyboardInterrupt("muhahaha")
 
 rate_of_turn = 2
 while True:
@@ -493,21 +502,23 @@ while True:
         print('left_right_angle : {}, up_down_angle : {}'.format(left_right_angle, up_down_angle))
 
         ## the draw function just draws, it also needs do pass trough : do_math, convert_to display(returns a tuple for pygame's draw function)
-        triangle = test_shapes['triangle']
-        lines = test_shapes['lines']
+        lines = []
+        triangles = []
+        for line in pyramid['lines']:
+            lines.append(convert_to_display(do_math(left_right_angle, up_down_angle, line)))
+        for triangle in pyramid['triangles']:
+            triangles.append(convert_to_display(do_math(left_right_angle, up_down_angle, triangle)))
+        
+        obstructed_lines = list(lines)
+        temporary_obstructed_lines = []
+        for triangle in triangles:
+            for line in obstructed_lines:
+                temporary_obstructed_lines += obstruct(line, triangle)
+            obstructed_lines = temporary_obstructed_lines
+            temporary_obstructed_lines = []
 
-        a = []
-        for line in lines:
-            a.append(convert_to_display(do_math(left_right_angle, up_down_angle, line)))
-        lines = a
-        triangle = convert_to_display(do_math(left_right_angle, up_down_angle, triangle))
-
-        for line in lines:
-            for l in obstruct(line, triangle):
-                draw(l, 'black')
-                print('line : \n{}\n'.format(line))
-        draw(triangle, 'black')
-        print()
+        for shape in obstructed_lines + triangles:
+            draw(shape, shape.color)
 
         draw(convert_to_display(do_math(left_right_angle, up_down_angle, axis[0]), -150, 150), 'red')
         draw(convert_to_display(do_math(left_right_angle, up_down_angle, axis[1]), -150, 150), 'green')
